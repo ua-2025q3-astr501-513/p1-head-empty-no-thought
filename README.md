@@ -12,7 +12,7 @@ To form team, come up with a unique team name and put it in this
 
 ## Documentation customization from the Team (woohoo!)
 
-The Head Empty, No Thoughts™ team aims to implement a 2D N-body ODE solver combined with an IMF integrator to simulate some elementary-level stellar cluster dynamics and evolution process. If this sounds fun, feel free to reach out to any of us and say something! True work won't begin until week of Sept 29 (which, yeah, probably is too late). 
+The Head Empty, No Thoughts™ team aims to implement a 2(3?)D N-body ODE solver combined with an IMF integrator to simulate some elementary-level stellar cluster dynamics and evolution process. If this sounds fun, feel free to reach out to any of us and say something! True work won't begin until week of Sept 29 (which, yeah, probably is too late). 
 
 Additionally, the presentation slides are available [here](https://docs.google.com/presentation/d/1UEkMNe21g3MoQCzrra4jgIt7j6J2d666Kll3J-W7jzA/edit?usp=sharing) (will be released after the presentation in-class is done). 
 
