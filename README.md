@@ -89,3 +89,7 @@ This project is your chance to be creative, apply what you have
 learned so far, and work collaboratively on a meaningful computational
 astrophysics problem.
 We look forward to your results!
+
+## Documentation customization (woohoo!)
+
+The Head Empty, No Thoughts™ team aims to implement a 2D N-body ODE solver combined with an IMF integrator to simulate some elementary-level stellar cluster dynamics and evolution process. If this sounds fun, feel free to reach out to any of us and say something! True work won't begin until week of Sept 29 (which, yeah, probably is too late). 
