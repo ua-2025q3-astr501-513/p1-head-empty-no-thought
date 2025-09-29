@@ -10,18 +10,20 @@ You are recommended to work in teams of 3 to 6 students.
 To form team, come up with a unique team name and put it in this
 [GitHub Classroom link](https://classroom.github.com/a/nqfiwWTG).
 
-## Documentation customization from the Team (woohoo!)
+## Documentation customization from the HENT Team
 
-The Head Empty, No Thoughts™ team aims to implement a 2(3?)D N-body ODE solver combined with an IMF integrator to simulate some elementary-level stellar cluster dynamics and evolution process. If this sounds fun, feel free to reach out to any of us and say something! True work won't begin until week of Sept 29 (which, yeah, probably is too late). 
+The Head Empty, No Thoughts™ team aims to implement a 2(3?)D N-body ODE solver combined with an IMF integrator to simulate some elementary-level stellar cluster dynamics. If this sounds fun, feel free to reach out to any of us and say something! True work won't begin until week of Sept 29 (which, yeah, probably is too late). 
 
-One branch of the project would be using the IMF integrator, and the other one would be focusing on Lagrange points. 
+One branch of the project would be using the IMF integrator to make a small cluster and evolve it (@Rafael), and the other one would be focusing on Lagrange points (@Logan). 
+
+The N-body integrator itself will be implemented as a class for easier import use. Essentially, we're developing a tool and applying it to two problems in this project.
 
 Additionally, the presentation slides are available [here](https://docs.google.com/presentation/d/1UEkMNe21g3MoQCzrra4jgIt7j6J2d666Kll3J-W7jzA/edit?usp=sharing) (will be released after the presentation in-class is done). 
 
 ## Timeline & Deliverables
 
 * Prsentation dates:
-  October 13th or 15th
+  October 13th?
 * Submission deadline:
   By 11:59pm (Arizona tgime) on the day of your presentation
 * Submission platform: GitHub Classroom
