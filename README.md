@@ -14,7 +14,7 @@ To form team, come up with a unique team name and put it in this
 
 The Head Empty, No Thoughts™ team aims to implement a 3D N-body ODE solver combined with an IMF integrator to simulate some elementary-level stellar cluster dynamics. We will implement two different ways of solving this problem (one that solves it exactly, and another one that solves an approximate problem on a larger scale) and compare them in the numbers of star we want to run on them. 
 
-<p style="color: red; size: 15px;">Task 1: finish implementing the N-body algorithm (aka make something usable) by the beginning of next week, **Oct 6**.</p>
+<p style="color: red; font-size: 15px;">Task 1: finish implementing the N-body algorithm (aka make something usable) by the beginning of next week, **Oct 6**.</p>
 
 Additionally, the presentation slides are available [here](https://docs.google.com/presentation/d/1UEkMNe21g3MoQCzrra4jgIt7j6J2d666Kll3J-W7jzA/edit?usp=sharing) (will be released after the presentation in-class is done). 
 
