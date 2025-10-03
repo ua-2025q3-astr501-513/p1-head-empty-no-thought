@@ -1,3 +1,5 @@
+[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/nqfiwWTG)
+[![Open in Visual Studio Code](https://classroom.github.com/assets/open-in-vscode-2e0aaae1b6195c2367325f4f02e2d04e9abb55f0b24a779b69b11b9e10269abc.svg)](https://classroom.github.com/online_ide?assignment_repo_id=20675659&assignment_repo_type=AssignmentRepo)
 # ASTR 513 Mid-Term Project
 
 Welcome to the repository of the **Mid-Term Project** for ASTR 513.
@@ -8,10 +10,18 @@ You are recommended to work in teams of 3 to 6 students.
 To form team, come up with a unique team name and put it in this
 [GitHub Classroom link](https://classroom.github.com/a/nqfiwWTG).
 
+## Documentation customization from the HENT Team
+
+The Head Empty, No Thoughts™ team aims to implement a 3D N-body ODE solver combined with an IMF integrator to simulate some elementary-level stellar cluster dynamics. We will implement two different ways of solving this problem (one that solves it exactly, and another one that solves an approximate problem on a larger scale) and compare them in the numbers of star we want to run on them. 
+
+<span style="color: red; font-size: 15px;">Task 1: finish implementing the N-body algorithm (aka make something usable) by the beginning of next week, **Oct 6**.</span>
+
+Additionally, the presentation slides are available [here](https://docs.google.com/presentation/d/1UEkMNe21g3MoQCzrra4jgIt7j6J2d666Kll3J-W7jzA/edit?usp=sharing) (will be released after the presentation in-class is done). 
+
 ## Timeline & Deliverables
 
 * Prsentation dates:
-  October 13th or 15th
+  October 13th?
 * Submission deadline:
   By 11:59pm (Arizona tgime) on the day of your presentation
 * Submission platform: GitHub Classroom
