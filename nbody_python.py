@@ -125,7 +125,7 @@ def integrate(system, dt = None, tf = None, energy_conservation = True):
         ))
 
         # then here comes the timesteps...
-        print("I'll implement this if we have time, but RK4 should be good enough along with leapfrog.")
+        print("I'll implement this if we have time, but RK4 should be good enough along with leapfrog. \nFor now, please specify a dt so the implemented integrators can be used.")
         
     else: 
         # dt is not none: decide if we want energy conservation. 
@@ -143,24 +143,24 @@ def integrate(system, dt = None, tf = None, energy_conservation = True):
             
         else: 
             # RK4 algorithm here. 
-            coeff = [0.5, 0.5, 1]
-            cst = [1., 3., 3., 1.] / 6
+            coeff = np.asarray([0.5, 0.5, 1])
+            cst = np.asarray([1., 3., 3., 1.]) / 6.
             order = 4
-
+        
             # Allocate memories:
             x0 = system.pos.copy()
             v0 = system.vel.copy()
-            xk = np.empty(order, system.nparticles, 3)
-            vk = np.empty(order, system.nparticles, 3)
-
+            xk = np.empty((order, system.nparticles, 3))
+            vk = np.empty((order, system.nparticles, 3))
+        
             # Initial stage
             a = acceleration(system)
             xk[0] = v0
             vk[0] = a
-
+        
             # Loop to calculate following xk, vk
             # Evaluation at each step is required, so we can't do vectorization here
-            for stage in range(1, num_stages):
+            for stage in range(1, order):
                 # Compute acceleration:
                 system.pos = x0 + dt * coeff[stage - 1] * xk[stage - 1]
                 a = acceleration(system)
@@ -168,11 +168,11 @@ def integrate(system, dt = None, tf = None, energy_conservation = True):
                 # Then compute xk and vk:
                 xk[stage] = v0 + dt * coeff[stage - 1] * vk[stage - 1]
                 vk[stage] = a
-
+        
             # Finally, step forward:
-            dx = np.einsum("i,ijk->jk", weights, xk)
-            dv = np.einsum("i,ijk->jk", weights, vk)
-
+            dx = np.einsum("i,ijk->jk", cst, xk)
+            dv = np.einsum("i,ijk->jk", cst, vk)
+        
             # Update system:
             system.pos = precise_add(x0, dt * dx)
             system.vel = precise_add(v0, dt * dv)
