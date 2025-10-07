@@ -95,3 +95,98 @@ def acceleration(system):
 
     # finally because I don't understand the reference document's class coding style, return the acceleration
     return a
+
+def integrate(system, dt = None, tf = None, energy_conservation = True): 
+    """
+    Integrate the system. 
+    dt  - timestep; defult: None. If dt = None, the system will switch to adaptive timestep (RKF4(5)) integration method. 
+    tf  - final time; default: None. Used only if dt = None. 
+    energy_conservation: if set to True, we will use leapfrog algorithm. If False, RK4 will be used. Used only if dt != None. 
+    One of dt or tf must be specified, and dt takes priority over tf (if a timestep is specified, that timestep and
+    non-adaptive time step methods will always be used).
+    *** NOTE: adaptive (dt = None) is not implemented yet; please use a specified dt. 
+    """
+    if dt is None:
+        # Check if the user gave a final timestep:
+        if tf is None:
+            print("If no timestep is specified, you must specify an end time tf.")
+            return None
+        # Implement RKF4(5) here.
+        cal_cst = [25./216., 1408./2565., 2197./4104., 1./5.]
+        err_cst = [16./135., 6656./12825., 28561./56430., 9./50., 2./55.]
+
+        coeff = np.array((
+        [1.0 / 4.0, 0.0, 0.0, 0.0, 0.0],
+        [3.0 / 32.0, 9.0 / 32.0, 0.0, 0.0, 0.0],
+        [1932.0 / 2197.0, -7200.0 / 2197.0, 7296.0 / 2197.0, 0.0, 0.0],
+        [439.0 / 216.0, -8.0, 3680.0 / 513.0, -845.0 / 4104.0, 0.0],
+        [-8.0 / 27.0, 2.0, -3544.0 / 2565.0, 1859.0 / 4104.0, -11.0 / 40.0],
+        ))
+
+        # then here comes the timesteps...
+        print("I'll implement this if we have time, but RK4 should be good enough along with leapfrog.")
+        
+    else: 
+        # dt is not none: decide if we want energy conservation. 
+        if energy_conservation:
+            # Initial kick: calculate velocity after half the timestep. 
+            a = acceleration(system)
+            system.vel += 0.5 * a * dt
+            
+            # Position drift: calculate position at the end with the half timestep velocity as an approximator. 
+            system.pos += dt * system.vel
+            
+            # Final velocity kick for another half timestep:
+            a = acceleration(system) # calculate the acceleration from the new system!
+            system.vel += 0.5 * a * dt
+            
+        else: 
+            # RK4 algorithm here. 
+            coeff = [0.5, 0.5, 1]
+            cst = [1., 3., 3., 1.] / 6
+            order = 4
+
+            # Allocate memories:
+            x0 = system.pos.copy()
+            v0 = system.vel.copy()
+            xk = np.empty(order, system.nparticles, 3)
+            vk = np.empty(order, system.nparticles, 3)
+
+            # Initial stage
+            a = acceleration(system)
+            xk[0] = v0
+            vk[0] = a
+
+            # Loop to calculate following xk, vk
+            # Evaluation at each step is required, so we can't do vectorization here
+            for stage in range(1, num_stages):
+                # Compute acceleration:
+                system.pos = x0 + dt * coeff[stage - 1] * xk[stage - 1]
+                a = acceleration(system)
+        
+                # Then compute xk and vk:
+                xk[stage] = v0 + dt * coeff[stage - 1] * vk[stage - 1]
+                vk[stage] = a
+
+            # Finally, step forward:
+            dx = np.einsum("i,ijk->jk", weights, xk)
+            dv = np.einsum("i,ijk->jk", weights, vk)
+
+            # Update system:
+            system.pos = precise_add(x0, dt * dx)
+            system.vel = precise_add(v0, dt * dv)
+            # Update in place so we don't need to return anything. 
+
+
+def precise_add(x, dx):
+    """
+    Helper function to reduce roundoff error in the final step for integrators where we add together small numbers. 
+    """
+    # to reduce roundoff error, use the technique mentioned in 
+    # https://alvinng4.github.io/grav_sim/docs/documentations/reducing_round_off_error/
+    e = 0.0
+    x_0 = x
+    e = e + dx
+    x = x_0 + e
+    e = e + (x_0 - x)
+    return (x_0 + dx + e)
