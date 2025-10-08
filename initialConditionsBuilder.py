@@ -195,36 +195,6 @@ class initialConditions:
         self.posVels    = np.concatenate([positions,velocities],axis=0)
         
         
-        
-#%%
-
-from astropy import units as u
-
-alphas = [2.03,0.3,-2.35]
-mass_intervals = [0.01,0.1,1,50]
-R0 = 10*u.au
-
-ic = initialConditions(1000)
-ic.sample_piecewise_powerlaw(alphas = alphas, mass_intervals = mass_intervals)
-ic.build_phasespace(nDim = 3,R0 = R0, model = 'plummer')
-
-posVels = ic.posVels
-masses = ic.masses
-particles = np.concatenate((posVels,masses.reshape(1, -1)))
-
-plt.scatter(particles[0],particles[1],c=np.log10(particles[6]),s=1)
-plt.show()
-
-
-plt.scatter(particles[3]/1000,particles[4]/1000,c=np.log10(particles[6]),s=10)
-plt.show()
-
-
-
-#%%
-
-particles
-np.savetxt("initialPositions.txt", particles, fmt="%.8e")
 
 
 
