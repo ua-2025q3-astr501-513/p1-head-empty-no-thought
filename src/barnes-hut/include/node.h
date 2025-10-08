@@ -23,8 +23,8 @@ class Node {
         bool contains( vec v );
         void insert( Body* b);
 
-        void update_mass( const Body* b) ;
-        void get_force( Body* b, scalar theta );
+        void update_mass( ) ;
+        vec get_force( Body* b, scalar theta );
 
 };
 
