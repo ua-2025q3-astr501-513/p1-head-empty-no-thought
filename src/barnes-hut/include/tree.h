@@ -1,3 +1,6 @@
+#ifndef TREE_H
+#define TREE_H
+
 #include <math.h>
 #include <vector>
 
@@ -19,6 +22,8 @@ class Octree {
         ~Octree( ); // destructor (think about what needs to be cleaned up here...)
     
         void build_tree(int n, scalar *xi, scalar *yi, scalar *zi, scalar *vxi, scalar *vyi, scalar *vzi, scalar *mass);
-        void print_bodies( );
+        void print_bodies( scalar step );
 
 };
+
+#endif

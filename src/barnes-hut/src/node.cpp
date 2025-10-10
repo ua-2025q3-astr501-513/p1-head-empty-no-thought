@@ -1,11 +1,13 @@
 #include "node.h"
+#include "body.h"
+#include "util.h"
 
 Node::Node( vec c, scalar s) {
     this->mass = 0.;
     this->dx = s;
     this->nchildren = 0;
     this->corner = c;
-    this->com = {}; // workaround to get a zero vector, lazy :/
+    this->com = {0, 0, 0}; // workaround to get a zero vector, lazy :/
     
     this->parent = nullptr;
     this->particle = nullptr;
@@ -122,6 +124,8 @@ vec Node::get_force( Body* b, scalar theta) {
     if (!is_internal() && particle != nullptr && particle != b) {
         // calcuate the force 
         F = G * particle->mass * b->mass / pow(r, 3); // magnitude of force
+        b->acc += rdiff * F * (1/b->mass); // updating particle acceleration from force calculation.
+        // i should probably update velocity and position when we handle timesteps.
         return rdiff * F; // force vector!
     }
 
@@ -138,5 +142,7 @@ vec Node::get_force( Body* b, scalar theta) {
             force += children[i]->get_force(b, theta);
         }
     }
+
+    return force;
 
 }

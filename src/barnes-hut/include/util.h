@@ -1,7 +1,11 @@
 #ifndef UTIL_H
 #define UTIL_H
 
-#define G 6.67e-8   // gravitational constant
+#define G 6.67e-11      // m^3 * kg^-1 * s^-1 gravitational constant
+#define MSUN 2e30       // kg, solar mass
+#define AU 1.495E11     // astronomical unit, meters
+#define PC 3.085E16     // parsec, meters
+
 typedef float scalar; // defining a 'scalar' data type
 
 #include <cmath>
@@ -29,16 +33,16 @@ struct vec {
 /**
  * returns the distance between two vectors.
 */
-scalar distance( const vec a, const vec b) {
+inline scalar distance( const vec a, const vec b) {
     vec diff =  (a*a) - (b*b);
     return sqrt( diff.x + diff.y + diff.z);
 }
 
 // NOTE. quadrants are labeled starting at the top left quadrant (0) 
 // and numbered clockwise, then moving 'down' through the levels of the cube
-int get_quadrant( float dx, vec corner, vec pos ) {
+inline int get_quadrant( scalar dx, vec corner, vec pos ) {
     int q =  0;
-    float ndx = dx / 2;
+    scalar ndx = dx / 2;
 
     // checking x and y first, easy to handle z later
     if ( pos.x <= corner.x + ndx) {
@@ -60,8 +64,8 @@ int get_quadrant( float dx, vec corner, vec pos ) {
     return q;
 }
 
-vec get_new_corner( int q, vec corner, float dx) {
-    float ndx = dx / 2;
+inline vec get_new_corner( int q, vec corner, scalar dx) {
+    scalar ndx = dx / 2;
     vec ncorner = corner;
 
     if (q % 4 == 1) {

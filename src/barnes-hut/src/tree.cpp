@@ -1,4 +1,7 @@
 #include "tree.h"
+#include "body.h"
+#include "node.h"
+#include "util.h"
 #include <iostream>
 
 Octree::Octree( ) {
@@ -27,7 +30,7 @@ void Octree::build_tree(int n, scalar *xi, scalar *yi, scalar *zi, scalar *vxi, 
     this->nbody = (Body **) malloc( n * sizeof( Body * )); // allocating memory for the array of pointers to all bodies
 
     for (int i = 0; i < n; i++) {
-        Body *b = new Body( xi[i], yi[i], zi[i], vxi[i], vyi[i], vzi[i], mass[i]);
+        Body *b = new Body( xi[i], yi[i], zi[i], vxi[i], vyi[i], vzi[i], mass[i] );
         root->insert( b ); // recursion in this function will take care of the rest.
         nbody[i] = b; // adding this to our list of pointers
     }
