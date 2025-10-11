@@ -35,29 +35,45 @@ bool Node::contains( vec v ) {
 */
 void Node::insert( Body* b) {
 
-    int q = get_quadrant(this->dx, this->corner, b->pos);
 
-    if (nchildren > 0) {
-        children[q]->insert( b );
-        return;
-    } else if ( this->is_internal() ) {
+    if ( this->is_internal() ) {
         // creates a new particle if this node doesn't have one
         this->particle = b;
         return;
-    }
-    // check: does the order here matter? 
-
-    // creates a new node in the right position in the list
-    children[q] = new Node( get_new_corner(q, corner, dx), dx / 2);
-    // inserts the particle
-    children[q]->insert(b);
-    // updates the number of children
-    nchildren++;
+    } else if (nchildren > 0) {
+        int q = get_quadrant(this->dx, this->corner, b->pos);
+        if (children[q] == nullptr) {
+            vec cnew = get_new_corner(q, this->corner, this->dx);
+            children[q] = new Node( cnew, this->dx/2);
+            children[q]->parent = this;
+            nchildren++;
+        }
+        children[q]->insert( b );
+        return;
+    } 
 
     // inserting this node's particle into a new subdivision/node.
     int qold = get_quadrant( dx, corner, particle->pos);
+    int qnew = get_quadrant( dx, corner, b->pos);
+
+    if (children[qold] == nullptr) { // if there's not already a node there
+        vec cnew = get_new_corner(qold, this->corner, this->dx);
+        children[qold] = new Node( cnew, this->dx/2);
+        children[qold]->parent = this;
+        nchildren++;
+    }
+
     children[qold]->insert(particle);
     particle = nullptr;
+
+    if (children[qnew] == nullptr) { // if there's not already a node there
+        vec cnew = get_new_corner(qnew, this->corner, this->dx);
+        children[qnew] = new Node( cnew, this->dx/2);
+        children[qnew]->parent = this;
+        nchildren++;
+    }
+
+    children[qnew]->insert(b);
 
     update_mass( ); // not sure if this needs to happen here or not
     return;

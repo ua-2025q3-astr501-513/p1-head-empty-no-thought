@@ -1,5 +1,5 @@
 INC=../include
-CXXFLAGS= -c -Wall -I$(INC) -std=c++11
+CXXFLAGS= -c -g -Wall -I$(INC) -std=c++11
 
 all: body node tree bh
 	g++ body.o node.o tree.o barnes-hut.o -o runME
@@ -17,4 +17,4 @@ body:
 	g++ $(CXXFLAGS) body.cpp 
 
 clean:
-	rm -rf *.o *.mod
+	rm -rf *.o *.mod runME
