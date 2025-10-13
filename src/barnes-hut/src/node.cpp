@@ -1,6 +1,7 @@
 #include "node.h"
 #include "body.h"
 #include "util.h"
+#include <iostream>
 
 Node::Node( vec c, scalar s) {
     this->mass = 0.;
@@ -13,10 +14,11 @@ Node::Node( vec c, scalar s) {
     this->particle = nullptr;
 }
 
+// note: an internal node is one that does have children.
 bool Node::is_internal( ) {
-    if (this->particle != nullptr)
-        return false;
-    return true;
+    if (nchildren > 0)
+        return true;
+    return false;
 }
 
 bool Node::contains( vec v ) {
@@ -36,11 +38,11 @@ bool Node::contains( vec v ) {
 void Node::insert( Body* b) {
 
 
-    if ( this->is_internal() ) {
+    if ( particle == nullptr && !is_internal() ) {
         // creates a new particle if this node doesn't have one
-        this->particle = b;
+        particle = b;
         return;
-    } else if (nchildren > 0) {
+    } else if ( is_internal() ) {
         int q = get_quadrant(this->dx, this->corner, b->pos);
         if (children[q] == nullptr) {
             vec cnew = get_new_corner(q, this->corner, this->dx);

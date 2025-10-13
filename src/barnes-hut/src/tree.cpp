@@ -36,6 +36,23 @@ void Octree::build_tree(int n, scalar *xi, scalar *yi, scalar *zi, scalar *vxi, 
     }
 }
 
+void Octree::compute_forces( float theta, float t ) {
+    
+    for (int i = 0; i < n; i++) {
+        root->get_force( nbody[i], theta);
+    }
+
+    // todo: come back to this to optimize? leapfrog maybe
+    for( int i = 0; i < n; i++) {
+
+        nbody[i]->pos += (nbody[i]->vel * t) + (nbody[i]->acc * 0.5 * (t * t) );
+        nbody[i]->vel += nbody[i]->acc * t;
+    }
+    
+
+}
+
+// todo: overload this? need a better format for long simulation output files.
 void Octree::print_bodies( scalar step ) {
 
     std::cout << "timestep ::\t" << step << "\n";

@@ -24,7 +24,12 @@ int main( int argc, char *argv[] ) {
     scalar m[10]  = { 0.001, 0.1, 1.2, 3.1, 0.5, 0.7, 0.008, 0.094, 1.6, 0.2}; 
     bhtree->build_tree(n, x, y, z, vx, vy, vz, m);
 
-    bhtree->print_bodies( 0.0 );
+    for ( int t = 0; t < 10; t++) {
+
+        bhtree->compute_forces( 0.5, t * 1.0);
+        bhtree->print_bodies( t * 1.0 );
+        
+    }
 
     return 0;
         
