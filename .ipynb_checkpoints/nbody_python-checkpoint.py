@@ -3,9 +3,10 @@ import scipy as sp
 
 # global constant definition
 msun = 1.989e30 # kg
-pc   = 3.086e13 # km
+pc   = 3.086e16 # m
+AU   = 1.496e11 # m
 
-G    = sp.constants.G * (1000)**3 * (1/msun) # in km^3 kg^-1 s^-2
+G    = 6.6743e-11 # kg m s
 
 # Class implementation for the nbody system
 class nbdsys:
@@ -28,25 +29,25 @@ class nbdsys:
 
         # attach the attributes.
         if mass_list is None:
-            mass_list = np.ones(nparticles)
+            mass_list = np.ones(nparticles) # msun
             print("Mass list is not provided; initiated as 1 Msun.")
         else: 
             mass_list = np.asarray(mass_list)
-        self.mlist = mass_list
+        self.mlist = mass_list # this is in msun
 
         if init_vel is None:
-            init_vel = np.zeros((nparticles, 3))
-            print("Velocity list is not provided; initiated as 0.")
+            init_vel = np.random.uniform(low=-30, high=30, size=(nparticles, 3))*1000
+            print("Velocity list is not provided; initiated as uniform random distribution between [-30, 30] on each component.")
         else: 
             init_vel = np.asarray(init_vel)
-        self.vel = init_vel
+        self.vel = init_vel # in m/s
 
         if init_pos is None:
-            init_pos = np.random.uniform(low=-1*nparticles**(1/3), high=nparticles**(1/3), size=(nparticles, 3)) * pc
-            print("Positions list is not provided; initiated as uniform random distribution.")
+            init_pos = np.random.uniform(low=-1*nparticles**(1/3), high=nparticles**(1/3), size=(nparticles, 3)) * AU # local testing purposes. this is now AU
+            print("Positions list is not provided; initiated as uniform random distribution in n^3 AU space.")
         else: 
             init_pos = np.asarray(init_pos)
-        self.pos = init_pos
+        self.pos = init_pos # in m
 
         # Now this class will center the system before beginning the integration.
         self.center()
@@ -71,7 +72,7 @@ def acceleration(system):
     a = np.zeros((system.nparticles, 3))
 
     pos = system.pos
-    m = system.mlist * msun
+    m = system.mlist * msun # convert back into kg
 
     # Step 1: broadcast pos into (N, N, 3) to compute pairwise distance vectors. 
     r_ij = pos[:, np.newaxis, :] - pos[np.newaxis, :, :]
@@ -95,7 +96,7 @@ def acceleration(system):
 
     # finally because I don't understand the reference document's class coding style, return the acceleration
     return a
-
+    
 def integrate(system, dt = None, tf = None, energy_conservation = True): 
     """
     Integrate the system. 
