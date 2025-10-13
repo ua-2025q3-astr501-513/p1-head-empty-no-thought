@@ -5,7 +5,7 @@ import scipy as sp
 msun = 1.989e30 # kg
 pc   = 3.086e13 # km
 
-G    = sp.constants.G * (1000)**3 * (1/msun) # in km^3 Msun^-1 s^-2
+G    = sp.constants.G * (1000)**3 * (1/msun) # in km^3 kg^-1 s^-2
 
 # Class implementation for the nbody system
 class nbdsys:
@@ -71,7 +71,7 @@ def acceleration(system):
     a = np.zeros((system.nparticles, 3))
 
     pos = system.pos
-    m = system.mlist
+    m = system.mlist * msun
 
     # Step 1: broadcast pos into (N, N, 3) to compute pairwise distance vectors. 
     r_ij = pos[:, np.newaxis, :] - pos[np.newaxis, :, :]
@@ -96,7 +96,6 @@ def acceleration(system):
     # finally because I don't understand the reference document's class coding style, return the acceleration
     return a
 
-<<<<<<< HEAD
 def integrate(system, dt = None, tf = None, energy_conservation = True): 
     """
     Integrate the system. 
@@ -144,7 +143,7 @@ def integrate(system, dt = None, tf = None, energy_conservation = True):
         else: 
             # RK4 algorithm here. 
             coeff = np.asarray([0.5, 0.5, 1])
-            cst = np.asarray([1., 3., 3., 1.]) / 6.
+            cst = np.asarray([1., 2., 2., 1.]) / 6.
             order = 4
         
             # Allocate memories:
@@ -178,6 +177,46 @@ def integrate(system, dt = None, tf = None, energy_conservation = True):
             system.vel = precise_add(v0, dt * dv)
             # Update in place so we don't need to return anything. 
 
+def rk4(system, dt): 
+    # Seems like leapfrog has a large error compraed to this even after ~50000 years. Let's implement both. 
+
+    # RK4 algorithm here. 
+    coeff = np.asarray([0.5, 0.5, 1])
+    cst = np.asarray([1., 2., 2., 1.]) / 6.
+    order = 4
+
+    # Allocate memories:
+    x0 = system.pos.copy()
+    v0 = system.vel.copy()
+    xk = np.empty((order, system.nparticles, 3))
+    vk = np.empty((order, system.nparticles, 3))
+
+    # Initial stage
+    a = acceleration(system)
+    xk[0] = v0
+    vk[0] = a
+
+    # Loop to calculate following xk, vk
+    # Evaluation at each step is required, so we can't do vectorization here
+    for stage in range(1, order):
+        # Compute acceleration:
+        system.pos = x0 + dt * coeff[stage - 1] * xk[stage - 1]
+        a = acceleration(system)
+
+        # Then compute xk and vk:
+        xk[stage] = v0 + dt * coeff[stage - 1] * vk[stage - 1]
+        vk[stage] = a
+
+    # Finally, step forward:
+    dx = np.einsum("i,ijk->jk", cst, xk)
+    dv = np.einsum("i,ijk->jk", cst, vk)
+
+    # Update system:
+    #system.pos = precise_add(x0, dt * dx)
+    #system.vel = precise_add(v0, dt * dv)
+    system.pos = x0 + dt * dx
+    system.vel = v0 + dt * dv
+    # Update in place so we don't need to return anything. 
 
 def precise_add(x, dx):
     """
