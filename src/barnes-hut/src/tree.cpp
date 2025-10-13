@@ -2,7 +2,12 @@
 #include "body.h"
 #include "node.h"
 #include "util.h"
+
 #include <iostream>
+#include <sstream>
+#include <stdio.h>
+#include <time.h>
+#include <sys/stat.h>
 
 Octree::Octree( ) {
     this->root = nullptr;
@@ -53,7 +58,7 @@ void Octree::compute_forces( float theta, float t ) {
 }
 
 // todo: overload this? need a better format for long simulation output files.
-void Octree::print_bodies( scalar step ) {
+void Octree::print_bodies( int step ) {
 
     std::cout << "timestep ::\t" << step << "\n";
 
@@ -61,6 +66,51 @@ void Octree::print_bodies( scalar step ) {
     // also headers! headers would be good.
     for (int i = 0; i < n; i++ ) {
         std::cout << i << "\t" << nbody[i]->pos.x << "\t" << nbody[i]->pos.y << "\t" << nbody[i]->pos.z << "\n";
+    }
+
+}
+
+void Octree::save_step( int step, scalar step_time, const char *prefix, const char *run) {
+
+    // we should check that our directory we want to make exists, if not we create it...
+    char dname[50];
+    char fname[100];
+    sprintf(dname, "%s/%s", DATPATH, run);
+    sprintf(fname, "%s/%s/globr_%s_%d.dat", DATPATH, run, prefix, step);
+
+    int status = mkdir(DATPATH, 0777);
+    
+    if (status <= 0 && errno != ENOENT) {
+        status = mkdir(dname, 0777);
+
+        if (status <= 0 && errno != ENOENT) {
+            FILE *fout = fopen( fname, "w"); // new file to write to
+
+            if ( fout != NULL ) { // checking that our file was made correctly
+
+                // way too much work to get the time of our file's writing....
+                time_t current_time;
+                time(&current_time);
+                struct tm * timeinfo;
+                timeinfo = localtime(&current_time);
+                char tstring[100];
+                strftime( tstring, sizeof(char) * 100, "%X, %e %h %g", timeinfo);
+
+                // a little header
+                fprintf( fout, "# >>> globr_%s_%d.dat. file written at %s.\n", prefix, step, tstring);
+                // i should add something here that tells us initial conditions, perhaps.
+                fprintf( fout, "# >>> timestep               : %-15d\n", step);
+                fprintf( fout, "# >>> simulation time (unit) : %-15.3e\n", step_time);
+                fprintf( fout, "\n------------------------------------------------------------------------------------------------\n");
+                fprintf( fout, "%-8s  %18s  %18s  %18s  %18s\n\n", "pID", "mass [msun]", "x [unit]", "y [unit]", "z [unit]");
+                // now onto the actual data!
+                for (int i = 0; i < n; i++) {
+                    fprintf(fout, "%-8d  %18.5e  %18.5e  %18.5e  %18.5e\n", i, nbody[i]->mass, nbody[i]->pos.x, nbody[i]->pos.y, nbody[i]->pos.z);
+                }
+
+                fclose( fout );
+            }
+        }
     }
 
 }

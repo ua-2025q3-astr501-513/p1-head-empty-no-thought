@@ -1,6 +1,7 @@
 #ifndef UTIL_H
 #define UTIL_H
 
+#define DATPATH "../data"
 #define G 6.67e-11      // m^3 * kg^-1 * s^-1 gravitational constant
 #define MSUN 2e30       // kg, solar mass
 #define AU 1.495E11     // astronomical unit, meters

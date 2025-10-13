@@ -24,7 +24,8 @@ class Octree {
         void build_tree(int n, scalar *xi, scalar *yi, scalar *zi, scalar *vxi, scalar *vyi, scalar *vzi, scalar *mass);
         void compute_forces( float theta, float t);
         // void update_tree( ); // this can be expanded later on... for now will just hold compute forces.
-        void print_bodies( scalar step );
+        void print_bodies( int step );
+        void save_step( int step, scalar time, const char *run, const char *prefix );
 
 };
 
