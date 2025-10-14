@@ -11,18 +11,13 @@ G    = 6.6743e-11 # kg m s
 # Class implementation for the nbody system
 class nbdsys:
 
-    def __init__(self, nparticles, mass_list = None, init_vel = None, init_pos = None):
+    def __init__(self, nparticles, mass_list = None, init_vel = None, init_pos = None, test = False) -> None:
         """
         Initializes an object of the class nbdsys. 
         Note that nparticles has to be defined at the time of object generation; for others, the program provides a uniform distribution
         of 1 solar mass objects in n**(1/3) pc**3 with 0 initial velocity and uniformly random initial positions. 
 
         Note that after the list was put in, the stars will be recentered so that CoM is always at (0, 0, 0).
-
-        nparticles:   number of particles in this simulation.
-        mass_list:    mass of each of the particles.
-        init_pos:     initial position of each of the particles, shaped as (N, 3).
-        init_vel:     initial velocity of each of the particles, shaped as (N, 3). 
         """
         
         # check if the lists are of appropriate size. 
@@ -70,14 +65,6 @@ class nbdsys:
 
 # methods related to this class?
 def acceleration(system): 
-    """
-    Calculates the acceleration for the current state of the system for each of the particles. 
-
-    system:  the system for which we want an acceleration. 
-
-    Returns:
-    a:       the (N, 3) array containing acceleration for each of the particles (3d vectors).
-    """
     # Again use the einsum method detailed in the reference document.
     # Note that this returns km s^-2.
 
@@ -110,39 +97,39 @@ def acceleration(system):
     # finally because I don't understand the reference document's class coding style, return the acceleration
     return a
     
-def integrate(system, dt = None, routine = "leapfrog"): 
+def integrate(system, dt = None, tf = None, energy_conservation = True): 
     """
-    Integrate the system. Note that changes are made in-place in the nbdsys object; to store the x and v vectors of each of the particles, please 
-        do so after calling integrate() and directly access the nbdsys object. 
-
-    system - the system for which to integrate. 
-    dt     - timestep; defult: None. If dt = None, the system will switch to adaptive timestep (RKF4(5)) integration method. 
-    tf     - final time; default: None. Used only if dt = None. 
+    Integrate the system. 
+    dt  - timestep; defult: None. If dt = None, the system will switch to adaptive timestep (RKF4(5)) integration method. 
+    tf  - final time; default: None. Used only if dt = None. 
     energy_conservation: if set to True, we will use leapfrog algorithm. If False, RK4 will be used. Used only if dt != None. 
     One of dt or tf must be specified, and dt takes priority over tf (if a timestep is specified, that timestep and
     non-adaptive time step methods will always be used).
-
+    *** NOTE: adaptive (dt = None) is not implemented yet; please use a specified dt. 
     """
     if dt is None:
-        print("You must specify a timestep dt.")
-        return None
+        # Check if the user gave a final timestep:
+        if tf is None:
+            print("If no timestep is specified, you must specify an end time tf.")
+            return None
         # Implement RKF4(5) here.
-        # cal_cst = [25./216., 1408./2565., 2197./4104., 1./5.]
-        # err_cst = [16./135., 6656./12825., 28561./56430., 9./50., 2./55.]
+        cal_cst = [25./216., 1408./2565., 2197./4104., 1./5.]
+        err_cst = [16./135., 6656./12825., 28561./56430., 9./50., 2./55.]
 
-        # coeff = np.array((
-        # [1.0 / 4.0, 0.0, 0.0, 0.0, 0.0],
-        # [3.0 / 32.0, 9.0 / 32.0, 0.0, 0.0, 0.0],
-        # [1932.0 / 2197.0, -7200.0 / 2197.0, 7296.0 / 2197.0, 0.0, 0.0],
-        # [439.0 / 216.0, -8.0, 3680.0 / 513.0, -845.0 / 4104.0, 0.0],
-        # [-8.0 / 27.0, 2.0, -3544.0 / 2565.0, 1859.0 / 4104.0, -11.0 / 40.0],
-        # ))
+        coeff = np.array((
+        [1.0 / 4.0, 0.0, 0.0, 0.0, 0.0],
+        [3.0 / 32.0, 9.0 / 32.0, 0.0, 0.0, 0.0],
+        [1932.0 / 2197.0, -7200.0 / 2197.0, 7296.0 / 2197.0, 0.0, 0.0],
+        [439.0 / 216.0, -8.0, 3680.0 / 513.0, -845.0 / 4104.0, 0.0],
+        [-8.0 / 27.0, 2.0, -3544.0 / 2565.0, 1859.0 / 4104.0, -11.0 / 40.0],
+        ))
 
-        # # then here comes the timesteps...
-        # print("I'll implement this if we have time, but RK4 should be good enough along with leapfrog. \nFor now, please specify a dt so the implemented integrators can be used.")
+        # then here comes the timesteps...
+        print("I'll implement this if we have time, but RK4 should be good enough along with leapfrog. \nFor now, please specify a dt so the implemented integrators can be used.")
         
     else: 
-        if routine == "leapfrog":
+        # dt is not none: decide if we want energy conservation. 
+        if energy_conservation:
             # Initial kick: calculate velocity after half the timestep. 
             a = acceleration(system)
             system.vel += 0.5 * a * dt
@@ -154,7 +141,7 @@ def integrate(system, dt = None, routine = "leapfrog"):
             a = acceleration(system) # calculate the acceleration from the new system!
             system.vel += 0.5 * a * dt
             
-        elif routine == "rk4": 
+        else: 
             # RK4 algorithm here. 
             coeff = np.asarray([0.5, 0.5, 1])
             cst = np.asarray([1., 2., 2., 1.]) / 6.
@@ -190,14 +177,8 @@ def integrate(system, dt = None, routine = "leapfrog"):
             system.pos = precise_add(x0, dt * dx)
             system.vel = precise_add(v0, dt * dv)
             # Update in place so we don't need to return anything. 
-        else:
-            print("You must specify an integration routine between leapfrog and rk4.")
-            return None
 
 def rk4(system, dt): 
-    """
-    Separate RK4 integrator for the system. Called in tests. 
-    """
     # Seems like leapfrog has a large error compraed to this even after ~50000 years. Let's implement both. 
 
     # RK4 algorithm here. 
