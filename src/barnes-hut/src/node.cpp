@@ -12,6 +12,20 @@ Node::Node( vec c, scalar s) {
     
     this->parent = nullptr;
     this->particle = nullptr;
+    
+    for (int i = 0; i < 8; i++) {
+        this->children[i] = nullptr;
+    }
+}
+
+// destructor, because i forgot to destroy the children (oops)
+// note that we DON'T destroy the particle (body) here
+Node::~Node( ) {
+    this->parent = nullptr;
+    this->particle = nullptr;
+    for (int i = 0; i < 8; i++) {
+        this->children[i] = nullptr;
+    } 
 }
 
 // note: an internal node is one that does have children.
@@ -25,7 +39,7 @@ bool Node::contains( vec v ) {
 
     if ( ( v.x > this->corner.x && v.x <= this->corner.x + this->dx ) &&
             ( v.y > this->corner.y && v.y <= this->corner.y + this->dx ) &&
-            ( v.z > this->corner.z && v.x <= this->corner.z + this->dx ) ) {
+            ( v.z > this->corner.z && v.z <= this->corner.z + this->dx ) ) {
                 return true;
             }
     return false;

@@ -13,7 +13,12 @@ class Octree {
     public:
         Node* root;
         scalar tsize; // simulation region, full scale (no units currently)
+        vec corner;
         int n; // total number of particles in the simulation
+
+        scalar kenergy;
+        scalar penergy;
+
         Body** nbody; // list of all bodies in the simuation
 
         Octree(); // default constructor
@@ -22,11 +27,13 @@ class Octree {
         ~Octree( ); // destructor (think about what needs to be cleaned up here...)
     
         void build_tree(int n, scalar *xi, scalar *yi, scalar *zi, scalar *vxi, scalar *vyi, scalar *vzi, scalar *mass);
-        void compute_forces( float theta, float t);
-        // void update_tree( ); // this can be expanded later on... for now will just hold compute forces.
+        void compute_forces( scalar theta, scalar dt);
         void print_bodies( int step );
-        void save_step( int step, scalar time, const char *run, const char *prefix );
+        void save_step( int step, scalar time, scalar theta, const char *run, const char *prefix );
 
+    private: // to help us rebuild the tree during force calculations
+        void delete_nodes( Node *node ); // recursive
+        void rebuild_tree( );
 };
 
 #endif

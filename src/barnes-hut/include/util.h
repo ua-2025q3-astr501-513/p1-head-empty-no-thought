@@ -6,6 +6,7 @@
 #define MSUN 2e30       // kg, solar mass
 #define AU 1.495E11     // astronomical unit, meters
 #define PC 3.085E16     // parsec, meters
+#define YR 3.15e7       // year, seconds
 
 typedef float scalar; // defining a 'scalar' data type
 
