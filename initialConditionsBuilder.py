@@ -43,6 +43,64 @@ def randomUniformSpherical(n,
                           R*np.sin(phi)]) # Y
     return data
 
+def kinetic_energy(m,vx,vy,vz):
+    """
+    This method computes the individual kinetic energies for a list of particles.
+    
+    Parameters
+    ----------
+    m (astropy object): masses of the particles.
+    vx, vy, vz (astropy objects): list of velocity components.
+    
+    Returns
+    -------
+    K (array): kinetic energies in Joules.
+    """
+    m   = m.to(u.kg).value
+    vx  = vx.to(u.m/u.s).value
+    vy  = vy.to(u.m/u.s).value
+    vz  = vz.to(u.m/u.s).value
+    
+    vx  = vx-np.mean(vx)
+    vy  = vy-np.mean(vy)
+    vz  = vz-np.mean(vz)
+    
+    K = 0.5*m*(vx**2+vy**2+vz**2)
+    
+    return K
+
+def potential_energy(m,x,y,z):
+    """
+    This method computes the total potential energy of a set of particles.
+    
+    Parameters
+    ----------
+    m (astropy object): masses of the particles.
+    vx, vy, vz (astropy objects): list of position components
+    
+    Returns
+    -------
+    U (float): total potential energy in Joules
+    """
+    m  = m.to(u.kg).value
+    x  = x.to(u.m).value
+    y  = y.to(u.m).value
+    z  = z.to(u.m).value
+
+    pos = np.vstack([x, y, z]).T
+
+    U = 0
+    for i in range(pos.shape[0]):
+        for j in range(i+1, pos.shape[0]):
+            rij = np.linalg.norm(pos[i]-pos[j])
+            U += -const.G.value*m[i]*m[j]/rij
+            if rij == 0:
+                print(f'{i} , {j}')
+                print(pos[i])
+                print(pos[j])
+                print('')
+    return U
+
 
 class initialConditions:
     """Description
@@ -75,6 +133,7 @@ class initialConditions:
         -------
         masses (array): array of sampled masses.
         """
+        # alphas = np.array(alphas)-1
         # Step 1. Compute continuity coefficients for the breaks of the power-law
         C               = [1.0]
         for i in range(1, len(alphas)):
@@ -95,6 +154,7 @@ class initialConditions:
             integrals  += [C[i]*val]
         total           = sum(integrals)
         C              /= total
+        self.C          = C
 
         # Step 3. Set the weights for the sample of intervals
         weights     = np.array(integrals)/total
@@ -178,6 +238,7 @@ class initialConditions:
             # Plummer potential: Phi(r) = -GM/sqrt(r^2+R0^2),  psi = -Phi
             psi     = G*M/np.sqrt(r**2+R0**2) # relative potential
             vesc    = np.sqrt(2.0*psi)
+            self.vesc = vesc
         
             # Speeds from DF at fixed r:
             # P(v|r) = Av^2f(E) with f(E) = B(psi-v^2/2)^{7/2} for 0 <= v <= vesc
@@ -193,34 +254,6 @@ class initialConditions:
                                                 nDim = nDim,
                                                 R    = v)
         self.posVels    = np.concatenate([positions,velocities],axis=0)
-        
-        
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-        
-        
         
         
         
