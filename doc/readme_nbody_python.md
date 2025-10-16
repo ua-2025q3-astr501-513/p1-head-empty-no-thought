@@ -8,7 +8,7 @@ It includes a class `nbdsys` for an n-body system to be integrated, and 3 more r
   - `nparticles`: numbers of particles in this simulation.
   - `mass_list`: list of masses for each particle. If not specified, this will be set to 1 $M_\odot$ for all the particles.
   - `init_pos`: list of initial position for each particle. If not specified, this will randomly draw n
-    samples from a roughly n AU$^2$ space.
+    samples from a roughly n $\textrm{AU}^2$ space.
   - `init_vel`: list of initial velocity for each particle. If not specified, this will be set to 0 for all of them. 
 - `energy(system, both = False)`: calculates the energy of the system in its current state.
   - `system`: the system for which the current energy is calculated.
