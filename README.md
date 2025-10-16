@@ -14,14 +14,20 @@ To form team, come up with a unique team name and put it in this
 
 The Head Empty, No Thoughts™ team aims to implement a 3D N-body ODE solver combined with an IMF integrator to simulate some elementary-level stellar cluster dynamics. We will implement two different ways of solving this problem (one that solves it exactly, and another one that solves an approximate problem on a larger scale) and compare them in the numbers of star we want to run on them. 
 
-<span style="color: red; font-size: 15px;">Task 1: finish implementing the N-body algorithm (aka make something usable) by the beginning of next week, **Oct 6**.</span>
-
 Additionally, the presentation slides are available [here](https://docs.google.com/presentation/d/1UEkMNe21g3MoQCzrra4jgIt7j6J2d666Kll3J-W7jzA/edit?usp=sharing) (will be released after the presentation in-class is done). 
+
+## Documentation for each file
+
+The code themselves are contained in the `src/` folder. There are 3 main "modules" or "components":
+
+1. `initialConditionsBuilder.py`: used to generate realistic cluster initial conditions for the other 2 integrators to use.
+2. `nbody_python.py`: loads (with some edition; see `nbody_python_demo.ipynb` for a more in-detail explanation of what's in there) the calculated initial condition, then integrate the system onwards, using either leapfrog or RK4 method. This is not done in the format of a package; instead users can download the script and run it themselves, out of the consideration for a lighter installation. The dependency in this module is only `numpy`. This part of the code referenced [5 steps to N-body simulation](https://alvinng4.github.io/grav_sim/5_steps_to_n_body_simulation/). Additionally, `make_gif.py` is the python script for generating gifs used for presentation, dependent on `matplotlib`. It should be used in conjunction with `bb_colors.txt` (from [m15y](https://temperature.m15y.com/)) for maximum ability - mainly, this adds the ability to make blackbody temperature colored stars in a gif, but I think it's cool.) 
+3. (c code readme here...)
 
 ## Timeline & Deliverables
 
 * Prsentation dates:
-  October 13th?
+  October 15th.
 * Submission deadline:
   By 11:59pm (Arizona tgime) on the day of your presentation
 * Submission platform: GitHub Classroom
