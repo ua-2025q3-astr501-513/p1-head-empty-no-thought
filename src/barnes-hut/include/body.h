@@ -13,7 +13,7 @@ class Body {
         scalar mass;
 
         Body( );
-        Body( scalar x, scalar y, scalar z, scalar vx, scalar vy, scalar vz, scalar m);
+        Body( scalar x, scalar y, scalar z, scalar vx, scalar vy, scalar vz, scalar m );
 
 };
 

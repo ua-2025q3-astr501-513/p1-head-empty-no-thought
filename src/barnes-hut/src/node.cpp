@@ -1,27 +1,45 @@
 #include "node.h"
+#include "body.h"
+#include "util.h"
+#include <iostream>
 
 Node::Node( vec c, scalar s) {
     this->mass = 0.;
     this->dx = s;
     this->nchildren = 0;
     this->corner = c;
-    this->com = {}; // workaround to get a zero vector, lazy :/
+    this->com = {0, 0, 0}; // workaround to get a zero vector, lazy :/
     
     this->parent = nullptr;
     this->particle = nullptr;
+    
+    for (int i = 0; i < 8; i++) {
+        this->children[i] = nullptr;
+    }
 }
 
+// destructor, because i forgot to destroy the children (oops)
+// note that we DON'T destroy the particle (body) here
+Node::~Node( ) {
+    this->parent = nullptr;
+    this->particle = nullptr;
+    for (int i = 0; i < 8; i++) {
+        this->children[i] = nullptr;
+    } 
+}
+
+// note: an internal node is one that does have children.
 bool Node::is_internal( ) {
-    if (this->particle != nullptr)
-        return false;
-    return true;
+    if (nchildren > 0)
+        return true;
+    return false;
 }
 
 bool Node::contains( vec v ) {
 
     if ( ( v.x > this->corner.x && v.x <= this->corner.x + this->dx ) &&
             ( v.y > this->corner.y && v.y <= this->corner.y + this->dx ) &&
-            ( v.z > this->corner.z && v.x <= this->corner.z + this->dx ) ) {
+            ( v.z > this->corner.z && v.z <= this->corner.z + this->dx ) ) {
                 return true;
             }
     return false;
@@ -33,29 +51,45 @@ bool Node::contains( vec v ) {
 */
 void Node::insert( Body* b) {
 
-    int q = get_quadrant(this->dx, this->corner, b->pos);
 
-    if (nchildren > 0) {
+    if ( particle == nullptr && !is_internal() ) {
+        // creates a new particle if this node doesn't have one
+        particle = b;
+        return;
+    } else if ( is_internal() ) {
+        int q = get_quadrant(this->dx, this->corner, b->pos);
+        if (children[q] == nullptr) {
+            vec cnew = get_new_corner(q, this->corner, this->dx);
+            children[q] = new Node( cnew, this->dx/2);
+            children[q]->parent = this;
+            nchildren++;
+        }
         children[q]->insert( b );
         return;
-    } else if ( this->is_internal() ) {
-        // creates a new particle if this node doesn't have one
-        this->particle = b;
-        return;
-    }
-    // check: does the order here matter? 
-
-    // creates a new node in the right position in the list
-    children[q] = new Node( get_new_corner(q, corner, dx), dx / 2);
-    // inserts the particle
-    children[q]->insert(b);
-    // updates the number of children
-    nchildren++;
+    } 
 
     // inserting this node's particle into a new subdivision/node.
     int qold = get_quadrant( dx, corner, particle->pos);
+    int qnew = get_quadrant( dx, corner, b->pos);
+
+    if (children[qold] == nullptr) { // if there's not already a node there
+        vec cnew = get_new_corner(qold, this->corner, this->dx);
+        children[qold] = new Node( cnew, this->dx/2);
+        children[qold]->parent = this;
+        nchildren++;
+    }
+
     children[qold]->insert(particle);
     particle = nullptr;
+
+    if (children[qnew] == nullptr) { // if there's not already a node there
+        vec cnew = get_new_corner(qnew, this->corner, this->dx);
+        children[qnew] = new Node( cnew, this->dx/2);
+        children[qnew]->parent = this;
+        nchildren++;
+    }
+
+    children[qnew]->insert(b);
 
     update_mass( ); // not sure if this needs to happen here or not
     return;
@@ -122,6 +156,8 @@ vec Node::get_force( Body* b, scalar theta) {
     if (!is_internal() && particle != nullptr && particle != b) {
         // calcuate the force 
         F = G * particle->mass * b->mass / pow(r, 3); // magnitude of force
+        b->acc += rdiff * F * (1/b->mass); // updating particle acceleration from force calculation.
+        // i should probably update velocity and position when we handle timesteps.
         return rdiff * F; // force vector!
     }
 
@@ -138,5 +174,7 @@ vec Node::get_force( Body* b, scalar theta) {
             force += children[i]->get_force(b, theta);
         }
     }
+
+    return force;
 
 }

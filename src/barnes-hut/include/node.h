@@ -18,6 +18,7 @@ class Node {
         Body* particle; // single particle, if this is a leaf in the tree
 
         Node( vec c, scalar s);
+        ~Node();
 
         bool is_internal( );
         bool contains( vec v );
