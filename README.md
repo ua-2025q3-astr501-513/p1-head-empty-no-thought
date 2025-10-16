@@ -12,7 +12,10 @@ To form team, come up with a unique team name and put it in this
 
 ## Documentation customization from the HENT Team
 
-The Head Empty, No Thoughts™ team aims to implement a 3D N-body ODE solver combined with an IMF integrator to simulate some elementary-level stellar cluster dynamics. We will implement two different ways of solving this problem (one that solves it exactly, and another one that solves an approximate problem on a larger scale) and compare them in the numbers of star we want to run on them. 
+The Head Empty, No Thoughts™ team uses three different 3D N-body integrator to integrate toy-model stellar clusters based on a piecewise power-law IMF and a Plummer model. The N-body integrators are the following:
+- direct Leap-Frog integrator for small clusters (~100 particles).
+- Barnes-Hut algorithm for large clusters (~1000 particles).
+- an implicit RK15 from the Rebound Python package for higher accuracy for small clusters (~100 particles).
 
 Additionally, the presentation slides are available [here](https://docs.google.com/presentation/d/1UEkMNe21g3MoQCzrra4jgIt7j6J2d666Kll3J-W7jzA/edit?usp=sharing) (will be released after the presentation in-class is done). 
 
