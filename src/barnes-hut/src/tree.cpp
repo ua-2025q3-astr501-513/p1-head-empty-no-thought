@@ -48,7 +48,7 @@ void Octree::build_tree(int n, scalar *xi, scalar *yi, scalar *zi, scalar *vxi, 
     }
 }
 
-
+// helper, could probably be deleted since we don't use it (node handles cleanup)
 void Octree::delete_nodes(Node* node) {
     if (!node) return;
     for (int i = 0; i < 8; ++i) {
@@ -63,7 +63,6 @@ void Octree::delete_nodes(Node* node) {
 
 void Octree::rebuild_tree() {
     delete root;
-    // root = nullptr; // deleting our tree
 
 // >>> scaling up (or down, i guess) our simulation size if needed.
     scalar farthest = 0; 
@@ -90,10 +89,11 @@ void Octree::rebuild_tree() {
         this->tsize = max_coord * 20;           // makes the system 10^3 times larger
         this->corner =  { -this->tsize/2, -this->tsize/2, this->tsize/2};
     }
-    else if ( max_coord < (tsize/2) * .10) {    // if our max coordinate is less than 15% of our simulation size
-        this->tsize = max_coord / 5;            // makes the system 10^3 times smaller
-        this->corner =  { -this->tsize/2, -this->tsize/2, this->tsize/2};
-    }
+    // todo: fix dynamic rescaling when making simulation domain smaller, segfaulting
+    // else if ( max_coord < (tsize/2) * .10) {    // if our max coordinate is less than 15% of our simulation size
+    //     this->tsize /= 10;            // makes the system 10^3 times smaller
+    //     this->corner =  { -this->tsize/2, -this->tsize/2, this->tsize/2};
+    // }
 
     // creates a new root
     this->root = new Node( this->corner, this->tsize );
@@ -127,22 +127,28 @@ void Octree::compute_forces( scalar theta, scalar dt ) {
     rebuild_tree();
 
     // kick, again
-    for(int i = 0; i < n; i++)
+    kenergy = 0.0; // zeroing our previous kinetic
+    for(int i = 0; i < n; i++) {
         nbody[i]->vel += nbody[i]->acc * 0.5 * dt;
+        kenergy += 0.5 * nbody[i]->mass * nbody[i]->vel.norm(); // sneaking in a quick kinetic energy calculation
+    }
 
-    // fixme: update potential and kinetic energy calculation later, through simple loop
-    // this->penergy = 0.0;
-    // this->kenergy = 0.0;
+    // resolved (maybe): potential energy calculations
+    penergy = 0.0; // zeroing our previous potential
+    for (int i = 0; i < n; i++) {
+        for (int j = i + 1; j < n; j++) {
+            if ( distance(nbody[i]->pos, nbody[j]->pos) > 1 * AU) // softening term, not sure if this is enough
+                penergy += G * nbody[i]->mass * nbody[j]->mass / distance(nbody[i]->pos, nbody[j]->pos);
+        }
+    }
 
 }
 
-// todo: overload this? need a better format for long simulation output files.
+// your basic functionality, only good for VERY small systems.
 void Octree::print_bodies( int step) {
 
     std::cout << "timestep ::\t" << step << "\n";
 
-    // add some nice formatting string to this later or something...
-    // also headers! headers would be good.
     for (int i = 0; i < n; i++ ) {
         std::cout << i << "\t" << nbody[i]->pos.x << "\t" << nbody[i]->pos.y << "\t" << nbody[i]->pos.z << "\n";
     }

@@ -6,36 +6,70 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
+#include <cstring>
+
+#define DATAPATH "../data/"
+#define INITPATH "../init/"
+
+struct config {
+    int n = 0;
+    int size = 10;
+    scalar dt = 1;
+    scalar theta = 0.5;
+    int nstep = 5000;
+    int fout = nstep / 1000;
+    char* run = nullptr;
+    char* prefix = nullptr;
+    char* filename = nullptr;
+};
+
+config parse_args(int argc, char** argv) {
+    config cfg;
+
+    for (int i = 1; i < argc; ++i) {
+        if ((std::strcmp(argv[i], "-N") == 0 || std::strcmp(argv[i], "--N") == 0) && i + 1 < argc) {
+            cfg.n = std::atoi(argv[++i]);
+        } else if (std::strcmp(argv[i], "--size") == 0 && i + 1 < argc) {
+            cfg.size = std::atoi(argv[++i]);
+        } else if (std::strcmp(argv[i], "--step") == 0 && i + 1 < argc) {
+            cfg.dt = std::atof(argv[++i]);
+        } else if (std::strcmp(argv[i], "--nstep") == 0 && i + 1 < argc) {
+            cfg.nstep = std::atoi(argv[++i]);
+        } else if (std::strcmp(argv[i], "--freq") == 0 && i + 1 < argc) {
+            cfg.fout = std::atoi(argv[++i]);
+        } else if (std::strcmp(argv[i], "--theta") == 0 && i + 1 < argc) {
+            cfg.theta = std::atof(argv[++i]);
+        } else if (std::strcmp(argv[i], "--run") == 0 && i + 1 < argc) {
+            cfg.run = argv[++i];
+        } else if (std::strcmp(argv[i], "--init") == 0 && i + 1 < argc) {
+            cfg.filename = argv[++i];
+        } else {
+            throw std::runtime_error(std::string("Unknown or incomplete argument: ") + argv[i]);
+        }
+    }
+
+    return cfg;
+}
 
 int main( int argc, char *argv[] ) {
 
-    int n = 10; // test suite of particles.
-    char run[20] = "test_1000p";
-    char prefix[20] = "testout";
+    config cfg = parse_args( argc, argv );
 
-    scalar size = 200 * AU; // total simulation size
+    char PATH[512];
+    std::snprintf(PATH, sizeof(PATH), "%s/%s", INITPATH, cfg.filename);
+
+
+    scalar size = cfg.size * PC; // total simulation size
     vec c = { -size/2, -size/2, size/2};
     Octree *bhtree = new Octree( c.x, c.y, c.z, size ); // initializing our tree
-
-    // initial positions (centered roughly around origin, range -2.5 to 2.5)
-    // scalar x[10]  = {  1.42, -1.35,  2.10, -1.94,  0.46, -2.23,  1.78, -0.34,  2.42, -1.32 };
-    // scalar y[10]  = { -1.15,  0.74, -2.02,  1.83, -0.58,  2.37, -0.91,  1.21, -1.76,  0.27 };
-    // scalar z[10]  = {  0.91, -1.91,  1.27, -0.44,  2.19, -1.68,  0.33,  1.56, -2.25,  0.82 };
-
-    // // small initial velocities (sum ≈ 0, range -0.05 to 0.05)
-    // scalar vx[10] = {  0.018, -0.037,  0.022,  0.005, -0.041,  0.017, -0.026,  0.033, -0.011,  0.020 };
-    // scalar vy[10] = { -0.008,  0.014, -0.043,  0.019,  0.007, -0.032,  0.025, -0.017,  0.038, -0.003 };
-    // scalar vz[10] = {  0.045, -0.012,  0.003, -0.027,  0.031, -0.009, -0.023,  0.041, -0.035, -0.014 };
-
-    // scalar m[10]  = { 0.001, 0.1, 1.2, 3.1, 0.5, 0.7, 0.008, 0.094, 1.6, 0.2}; 
-
 
     // >>> new test suite, 1000 particles for a realistic cluster
 
     scalar *x; scalar *y; scalar *z;
     scalar *vx; scalar *vy; scalar *vz;
     scalar *m;
-    n = 1000;
+
+    int n = cfg.n;
 
     x   = (scalar *) malloc( sizeof(scalar) * n);
     y   = (scalar *) malloc( sizeof(scalar) * n);
@@ -49,7 +83,8 @@ int main( int argc, char *argv[] ) {
     // actually reading in our data
     scalar *lines[7] = { x, y, z, vx, vy, vz, m };
 
-    FILE *fp = fopen("../init/initialPositions.txt", "r");
+    FILE *fp = fopen(PATH, "r");
+    // std::cout << "reading file...\n"; 
 
     if (!fp) {
         perror("Error opening file");
@@ -69,17 +104,19 @@ int main( int argc, char *argv[] ) {
     }
 
     fclose(fp);
+    // std::cout << "done reading file...\n"; 
 
     bhtree->build_tree(n, x, y, z, vx, vy, vz, m);
-    scalar dt = .5 * YR;
+    // std::cout << "tree built...\n"; 
+    scalar dt = cfg.dt * YR;
     scalar simtime = 0.0;
-    scalar theta = 0.5;
+    scalar theta = cfg.theta;
 
-    for ( int t = 0; t < 200000; t++) {
+    for ( int t = 0; t < cfg.nstep; t++) {
 
         bhtree->compute_forces( theta, dt);
-        if (t % 10 == 0)
-            bhtree->save_step( t, simtime, theta, run, prefix);
+        if (t % cfg.fout == 0)
+            bhtree->save_step( t, simtime, theta, cfg.run, cfg.run);
         simtime += dt;
         
     }
