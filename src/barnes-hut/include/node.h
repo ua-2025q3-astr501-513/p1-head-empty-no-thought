@@ -7,15 +7,15 @@
 class Node {
 
     public:
-        scalar mass;
-        scalar dx;
-        int nchildren;
-        vec corner;
-        vec com;
+        scalar mass; /** total mass in node [kg] */
+        scalar dx; /** node size (physical) [m] */
+        int nchildren; /** total number of child nodes */
+        vec corner; /** coordinates of upper left corner */
+        vec com; /** position of center of mass */
 
-        Node* parent;
-        Node* children[8]; // can i do this?
-        Body* particle; // single particle, if this is a leaf in the tree
+        Node* parent; /** parent node in the tree */
+        Node* children[8]; /** list of pointers to child nodes */
+        Body* particle; /** particle/body contained in node */
 
         Node( vec c, scalar s);
         ~Node();

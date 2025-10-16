@@ -116,7 +116,7 @@ int main( int argc, char *argv[] ) {
 
         bhtree->compute_forces( theta, dt);
         if (t % cfg.fout == 0)
-            bhtree->save_step( t, simtime, theta, cfg.run, cfg.run);
+            bhtree->save_step( t, simtime, theta, cfg.run );
         simtime += dt;
         
     }

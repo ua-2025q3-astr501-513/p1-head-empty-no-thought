@@ -9,6 +9,7 @@
 #include <time.h>
 #include <sys/stat.h>
 
+/** basic constructor, initalizes to zero */
 Octree::Octree( ) {
     this->root = nullptr;
     this->tsize = 0;
@@ -20,6 +21,14 @@ Octree::Octree( ) {
 
 } 
 
+/** constructor, root node and empty tree.
+ * 
+ * @param cx coorner coordinate, x [m]
+ * @param cy coorner coordinate, y [m]
+ * @param cz coorner coordinate, z [m]
+ * @param dz total simulation domain, side length [m]
+ * 
+*/
 Octree::Octree( scalar cx, scalar cy, scalar cz, scalar dx ) {
     this->corner = {cx, cy, cz};
 
@@ -31,11 +40,26 @@ Octree::Octree( scalar cx, scalar cy, scalar cz, scalar dx ) {
     this->penergy = 0;
 } 
     
+/**
+ * destructor.
+*/
 Octree::~Octree( ) {
-    // figure out additional clean up later...
     delete[] this->nbody;
 }
 
+/**
+ * recursively populates the octree given the number of bodies and their initial conditions.
+ * 
+ * @param n number of bodies in the system
+ * @param xi initial positions, x [m]
+ * @param yi initial positions, y [m]
+ * @param zi initial positions, z [m]
+ * @param vxi initial velocities, x [m/s]
+ * @param vyi initial velocities, y [m/s]
+ * @param vzi initial velocities, z [m/s]
+ * @param mass masses [solar mass]
+ * 
+*/
 void Octree::build_tree(int n, scalar *xi, scalar *yi, scalar *zi, scalar *vxi, scalar *vyi, scalar *vzi, scalar *mass) {
     
     this->n = n; // updating the number of bodies in the simulation!
@@ -48,23 +72,18 @@ void Octree::build_tree(int n, scalar *xi, scalar *yi, scalar *zi, scalar *vxi, 
     }
 }
 
-// helper, could probably be deleted since we don't use it (node handles cleanup)
-void Octree::delete_nodes(Node* node) {
-    if (!node) return;
-    for (int i = 0; i < 8; ++i) {
-        if (node->children[i]) {
-            delete_nodes(node->children[i]);
-            // node->children[i] = nullptr;
-        }
-    }
-    delete node;
-}
-
-
-void Octree::rebuild_tree() {
+/**
+ * reconstructs the tree and rescales total simulation domain (size) if needed. 
+ * rescaling occurs if a body's distance from the origin is greater than 30% of the
+ * total domain.
+ * 
+ * this currently only supports upscaling, downscaling has not been debugged and 
+ * implemented.
+*/
+void Octree::rebuild_tree( ) {
     delete root;
 
-// >>> scaling up (or down, i guess) our simulation size if needed.
+// >>> scaling up our simulation size if needed.
     scalar farthest = 0; 
     vec origin = {0, 0, 0};
     int fidx = -1;
@@ -104,10 +123,19 @@ void Octree::rebuild_tree() {
     }
 }
 
+/**
+ * handles high-level force computations for all bodies in the tree and updates
+ * positions, velocities, and accelerations through leapfrog integration. 
+ * 
+ * also calculates system energies (buggy) for basic diagnostics.
+ * 
+ * @param theta threshold criteria for barnes-hut, ratio of node width to distance to center of mass.
+ * @param dt timestep [s]
+*/
 void Octree::compute_forces( scalar theta, scalar dt ) {
 
     // zeroing out our accelerations so they *don't* sum
-    for(int i = 0; i < n; i++)
+    for (int i = 0; i < n; i++)
         nbody[i]->acc = {0,0,0};
 
     // force calculation, barnes-hut inside here!
@@ -117,10 +145,10 @@ void Octree::compute_forces( scalar theta, scalar dt ) {
 // >>> leapfrog integration here...
 
     // kick
-    for(int i = 0; i < n; i++)
+    for (int i = 0; i < n; i++)
         nbody[i]->vel += nbody[i]->acc * 0.5 * dt;
     // drift
-    for(int i = 0; i < n; i++)
+    for (int i = 0; i < n; i++)
         nbody[i]->pos += nbody[i]->vel * dt;
 
 // >>> rebuilding our tree with updated postions
@@ -128,12 +156,12 @@ void Octree::compute_forces( scalar theta, scalar dt ) {
 
     // kick, again
     kenergy = 0.0; // zeroing our previous kinetic
-    for(int i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
         nbody[i]->vel += nbody[i]->acc * 0.5 * dt;
         kenergy += 0.5 * nbody[i]->mass * nbody[i]->vel.norm(); // sneaking in a quick kinetic energy calculation
     }
 
-    // resolved (maybe): potential energy calculations
+    // todo: fix softening term here, should be on the scale of 0.01 pc for globular clusters.
     penergy = 0.0; // zeroing our previous potential
     for (int i = 0; i < n; i++) {
         for (int j = i + 1; j < n; j++) {
@@ -144,7 +172,12 @@ void Octree::compute_forces( scalar theta, scalar dt ) {
 
 }
 
-// your basic functionality, only good for VERY small systems.
+/**
+ * Prints basic information about every particle in a system. 
+ * Only good for VERY small systems, don't use unless debugging.
+ * 
+ * @param step integer timestep of the simulation
+ */ 
 void Octree::print_bodies( int step) {
 
     std::cout << "timestep ::\t" << step << "\n";
@@ -155,13 +188,24 @@ void Octree::print_bodies( int step) {
 
 }
 
-void Octree::save_step( int step, scalar step_time, scalar theta, const char *prefix, const char *run) {
+/**
+ * handles data output for the entire simulation and makes sure our .dat files 
+ * are formatted to be pretty and machine readable.
+ * 
+ * all files have the naming convention globr_{run}_0000000.dat.
+ * 
+ * @param step integer timestep
+ * @param step_time physical time of timestep [s]
+ * @param theta threshold criterion
+ * @param run name of simulation run, for file naming
+*/
+void Octree::save_step( int step, scalar step_time, scalar theta, const char *run) {
 
     // we should check that our directory we want to make exists, if not we create it...
     char dname[50];
     char fname[100];
     sprintf(dname, "%s/%s", DATPATH, run);
-    sprintf(fname, "%s/%s/globr_%s_%07d.dat", DATPATH, run, prefix, step);
+    sprintf(fname, "%s/%s/globr_%s_%07d.dat", DATPATH, run, run, step);
 
     int status = mkdir(DATPATH, 0777);
     
@@ -182,15 +226,15 @@ void Octree::save_step( int step, scalar step_time, scalar theta, const char *pr
                 strftime( tstring, sizeof(char) * 100, "%X, %e %h %g", timeinfo);
 
                 // a little header
-                fprintf( fout, "# >>> globr_%s_%07d.dat. file written at %s.\n", prefix, step, tstring);
+                fprintf( fout, "# >>> globr_%s_%07d.dat. file written at %s.\n", run, step, tstring);
                 // i should add something here that tells us initial conditions, perhaps.
                 fprintf( fout, "# >>> timestep                  : %-15d\n", step);
                 fprintf( fout, "# >>> particles                 : %-15d\n", n);
                 fprintf( fout, "# >>> theta                     : %-15.3f\n", theta );
-                fprintf( fout, "# >>> simulation time (yr)      : %-15.3e\n", step_time/YR);
-                fprintf( fout, "# >>> simulation size (au)      : %-15.3e\n", tsize/AU);
-                fprintf( fout, "# >>> kinetic energy (J)        : %-15.3e\n", kenergy);
-                fprintf( fout, "# >>> potential energy (J)      : %-15.3e\n", penergy);
+                fprintf( fout, "# >>> simulation time   [yr]    : %-15.3e\n", step_time/YR);
+                fprintf( fout, "# >>> simulation size   [pc]    : %-15.3e\n", tsize/PC);
+                fprintf( fout, "# >>> kinetic energy    [J]     : %-15.3e\n", kenergy);
+                fprintf( fout, "# >>> potential energy  [J]     : %-15.3e\n", penergy);
                 fprintf( fout, "\n# >>> -------------------------------------------------------------------------------------------\n");
                 fprintf( fout, "%-8s  %18s  %18s  %18s  %18s\n\n", "pID", "mass [msun]", "x [m]", "y [m]", "z [m]");
                 // now onto the actual data!

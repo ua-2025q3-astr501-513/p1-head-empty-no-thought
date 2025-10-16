@@ -3,6 +3,13 @@
 #include "util.h"
 #include <iostream>
 
+/** 
+ * constructor, basic. all fields aside from position and size are set to 
+ * zero or null pointers.
+ * 
+ * @param c the coordinates of the upper left corner of the node
+ * @param s the physical size of the node's domain [m]
+*/
 Node::Node( vec c, scalar s) {
     this->mass = 0.;
     this->dx = s;
@@ -18,8 +25,12 @@ Node::Node( vec c, scalar s) {
     }
 }
 
-// destructor, because i forgot to destroy the children (oops)
-// note that we DON'T destroy the particle (body) here
+/** 
+ * destructor, because i forgot to destroy the children (oops)
+ * 
+ * note that we DON'T destroy the particle (body) here >> 
+ * that pointer is still needed by the tree to rebuild.
+ */
 Node::~Node( ) {
     this->parent = nullptr;
     this->particle = nullptr;
@@ -28,13 +39,25 @@ Node::~Node( ) {
     } 
 }
 
-// note: an internal node is one that does have children.
+/** 
+ * checks if a node is internal to the tree.
+ * 
+ * note: an internal node is one that does have children.
+ * 
+ * @returns true if the node is internal (has children); false otherwise.
+ */
 bool Node::is_internal( ) {
     if (nchildren > 0)
         return true;
     return false;
 }
 
+/**
+ * checks to see if a position vector is within the domain
+ * of this node.
+ * 
+ * @returns true if v inside this node; false otherwise.
+*/
 bool Node::contains( vec v ) {
 
     if ( ( v.x > this->corner.x && v.x <= this->corner.x + this->dx ) &&
@@ -46,8 +69,11 @@ bool Node::contains( vec v ) {
 }
 
 /**
- * add documentation later...
+ * recursively inserts a particle (body) into this node (or its children).
+ * 
  * psuedocode taken from Thomas Trost's lecture slides [here](https://www.tp1.ruhr-uni-bochum.de/~grauer/lectures/compI_IIWS1819/pdfs/lec10.pdf)
+ * 
+ * @param b the body to be added to the node.
 */
 void Node::insert( Body* b) {
 
@@ -96,6 +122,9 @@ void Node::insert( Body* b) {
     
 }
 
+/**
+ * updates the total node mass (e.g. if we added a body or a child node.)
+*/
 void Node::update_mass( ) {
     
     // if this is a node with no children and one body:
@@ -139,8 +168,18 @@ void Node::update_mass( ) {
 }
 
 /**
- * add documentation later...
+ * calculates the net force this node exerts on another body,
+ * either using a direct calculation or a center of mass estimate
+ * with the barnes-hut algorithm. recursive, to ensure we track through
+ * the tree if needed.
+ * 
  * psuedocode taken from Thomas Trost's lecture slides [here](https://www.tp1.ruhr-uni-bochum.de/~grauer/lectures/compI_IIWS1819/pdfs/lec10.pdf)
+ * 
+ * @param b the body we're calculating force on
+ * @param theta threshold criteria for barnes-hut, ratio of node width to distance to center of mass.
+ * 
+ * @returns a force vector.
+ * 
 */
 vec Node::get_force( Body* b, scalar theta) {
     // this is where the magic of barnes hut happens.
