@@ -8,76 +8,9 @@ AU   = 1.496e11 # m
 
 G    = 6.6743e-11 # kg m s
 
-# Class implementation for the nbody system
-class nbdsys:
+# functions
 
-    def __init__(self, nparticles, mass_list = None, init_vel = None, init_pos = None):
-        """
-        Initializes an object of the class nbdsys. 
-        Note that nparticles has to be defined at the time of object generation; for others, the program provides a uniform distribution
-        of 1 solar mass objects in n**(1/3) pc**3 with 0 initial velocity and uniformly random initial positions. 
-
-        Note that after the list was put in, the stars will be recentered so that CoM is always at (0, 0, 0).
-
-        nparticles:   number of particles in this simulation.
-        mass_list:    mass of each of the particles.
-        init_pos:     initial position of each of the particles, shaped as (N, 3).
-        init_vel:     initial velocity of each of the particles, shaped as (N, 3). 
-        """
-        
-        # check if the lists are of appropriate size. 
-        # ***********
-        # ** TO DO **
-        # ***********
-
-        self.nparticles = nparticles
-
-        # attach the attributes.
-        if mass_list is None:
-            mass_list = np.ones(nparticles) # msun
-            print("Mass list is not provided; initiated as 1 Msun.")
-        else: 
-            mass_list = np.asarray(mass_list)
-        self.mlist = mass_list # this is in msun
-
-        if init_vel is None:
-            init_vel = np.random.uniform(low=-30, high=30, size=(nparticles, 3))*1000
-            print("Velocity list is not provided; initiated as uniform random distribution between [-30, 30] on each component.")
-        else: 
-            init_vel = np.asarray(init_vel)
-        self.vel = init_vel # in m/s
-
-        if init_pos is None:
-            init_pos = np.random.uniform(low=-1*nparticles**(1/3), high=nparticles**(1/3), size=(nparticles, 3)) * AU # local testing purposes. this is now AU
-            print("Positions list is not provided; initiated as uniform random distribution in n^3 AU space.")
-        else: 
-            init_pos = np.asarray(init_pos)
-        self.pos = init_pos # in m
-
-        # Now this class will center the system before beginning the integration.
-        self.center()
-
-    def center(self) -> None:
-        # calculate the center of mass as-is. 
-        
-        M = np.sum(self.mlist) # total mass of the system
-        
-        x_cm = np.einsum("i,ij->j", self.mlist, self.pos) / M # einsum: sum(ith entry in mlist * ijth entry on pos) = ith entry on final answer.
-        v_cm = np.einsum("i,ij->j", self.mlist, self.vel) / M
-
-        self.pos -= x_cm
-        self.vel -= v_cm
-
-# methods related to this class?
 def acceleration(system): 
-    """
-    Calculates the acceleration for the current state of the system for each of the particles. 
-
-    system:  the system for which we want an acceleration. 
-
-    Returns:
-    a:       the (N, 3) array containing acceleration for each of the particles (3d vectors).
-    """
     # Again use the einsum method detailed in the reference document.
     # Note that this returns km s^-2.
 
@@ -85,7 +18,7 @@ def acceleration(system):
     a = np.zeros((system.nparticles, 3))
 
     pos = system.pos
-    m = system.mlist * msun # convert back into kg
+    m = system.mlist * msun
 
     # Step 1: broadcast pos into (N, N, 3) to compute pairwise distance vectors. 
     r_ij = pos[:, np.newaxis, :] - pos[np.newaxis, :, :]
@@ -109,24 +42,167 @@ def acceleration(system):
 
     # finally because I don't understand the reference document's class coding style, return the acceleration
     return a
-    
-def integrate(system, dt = None, routine = "leapfrog"): 
-    """
-    Integrate the system. Note that changes are made in-place in the nbdsys object; to store the x and v vectors of each of the particles, please 
-        do so after calling integrate() and directly access the nbdsys object. 
 
-    system - the system for which to integrate. 
-    dt     - timestep; defult: None. If dt = None, the system will switch to adaptive timestep (RKF4(5)) integration method. 
-    tf     - final time; default: None. Used only if dt = None. 
+
+def leapfrog(system, dt):
+
+    # Initial kick: calculate velocity after half the timestep. 
+    a = acceleration(system)
+    system.vel += 0.5 * a * dt
+    
+    # Position drift: calculate position at the end with the half timestep velocity as an approximator. 
+    system.pos += dt * system.vel
+    
+    # Final velocity kick for another half timestep:
+    a = acceleration(system) # calculate the acceleration from the new system!
+    system.vel += 0.5 * a * dt
+
+def rk4(system, dt): 
+    print("Calling from source folder.")
+    # Seems like leapfrog has a large error compraed to this even after ~50000 years. Let's implement both. 
+
+    # RK4 algorithm here. 
+    coeff = np.asarray([0.5, 0.5, 1])
+    cst = np.asarray([1., 2., 2., 1.]) / 6.
+    order = 4
+
+    # Allocate memories:
+    x0 = system.pos.copy()
+    v0 = system.vel.copy()
+    xk = np.empty((order, system.nparticles, 3))
+    vk = np.empty((order, system.nparticles, 3))
+
+    # Initial stage
+    a = system.acceleration()
+    xk[0] = v0
+    vk[0] = a
+
+    # Loop to calculate following xk, vk
+    # Evaluation at each step is required, so we can't do vectorization here
+    for stage in range(1, order):
+        # Compute acceleration:
+        system.pos = x0 + dt * coeff[stage - 1] * xk[stage - 1]
+        a = system.acceleration()
+
+        # Then compute xk and vk:
+        xk[stage] = v0 + dt * coeff[stage - 1] * vk[stage - 1]
+        vk[stage] = a
+
+    # Finally, step forward:
+    dx = np.einsum("i,ijk->jk", cst, xk)
+    dv = np.einsum("i,ijk->jk", cst, vk)
+
+    # Update system:
+    system.pos = x0 + dt * dx
+    system.vel = v0 + dt * dv
+    #system.pos = precise_add(x0, dt * dx)
+    #system.vel = precise_add(v0, dt * dv)
+    # Update in place so we don't need to return anything. 
+    
+def precise_add(x, dx):
+    """
+    Helper function to reduce roundoff error in the final step for integrators where we add together small numbers. 
+    """
+    # to reduce roundoff error, use the technique mentioned in 
+    # https://alvinng4.github.io/grav_sim/docs/documentations/reducing_round_off_error/
+    e = 0.0
+    x_0 = x
+    e = e + dx
+    x = x_0 + e
+    e = e + (x_0 - x)
+    return (x_0 + dx + e)
+
+def energy(system):
+    # Returns the energy of the current system.
+    x = system.pos
+    v = system.vel
+    m = system.mlist * msun
+    
+    KE = 0
+    PE = 0
+    for i in range(system.nparticles):
+        # KE
+        KE += 0.5 * m[i] * np.sum(v[i] ** 2)
+        # PE
+        for j in range(i + 1, system.nparticles):
+            PE -= G * m[i] * m[j] / np.linalg.norm(x[i] - x[j])
+    #print(KE, PE)
+    return KE + PE
+
+# Class implementation for the nbody system
+class nbdsys:
+
+    def __init__(self, nparticles, mass_list = None, init_vel = None, init_pos = None, test = False) -> None:
+        """
+        Initializes an object of the class nbdsys. 
+        Note that nparticles has to be defined at the time of object generation; for others, the program provides a uniform distribution
+        of 1 solar mass objects in n**(1/3) pc**3 with 0 initial velocity and uniformly random initial positions. 
+
+        Note that after the list was put in, the stars will be recentered so that CoM is always at (0, 0, 0).
+        """
+        
+        # check if the lists are of appropriate size. 
+        # ***********
+        # ** TO DO **
+        # ***********
+
+        self.nparticles = nparticles
+
+        # attach the attributes.
+        if mass_list is None:
+            mass_list = np.ones(nparticles)
+            print("Mass list is not provided; initiated as 1 Msun.")
+        else: 
+            mass_list = np.asarray(mass_list)
+        self.mlist = mass_list
+
+        if init_vel is None:
+            init_vel = np.zeros((nparticles, 3))
+            print("Velocity list is not provided; initiated as 0.")
+        else: 
+            init_vel = np.asarray(init_vel)
+        self.vel = init_vel
+
+        if init_pos is None:
+            init_pos = np.random.uniform(low=-1*nparticles**(1/3), high=nparticles**(1/3), size=(nparticles, 3)) * pc
+            print("Positions list is not provided; initiated as uniform random distribution.")
+        else: 
+            init_pos = np.asarray(init_pos)
+        self.pos = init_pos
+
+        # Now this class will center the system before beginning the integration.
+        self.center()
+
+    def center(self) -> None:
+        # calculate the center of mass as-is. 
+        
+        M = np.sum(self.mlist) # total mass of the system
+        
+        x_cm = np.einsum("i,ij->j", self.mlist, self.pos) / M # einsum: sum(ith entry in mlist * ijth entry on pos) = ith entry on final answer.
+        v_cm = np.einsum("i,ij->j", self.mlist, self.vel) / M
+
+        self.pos -= x_cm
+        self.vel -= v_cm
+
+# methods related to this class?
+
+def integrate(system, dt = None, tf = None, integrator = "leapfrog"): 
+    """
+    Integrate the system. 
+    dt  - timestep; defult: None. If dt = None, the system will switch to adaptive timestep (RKF4(5)) integration method. 
+    tf  - final time; default: None. Used only if dt = None. 
     energy_conservation: if set to True, we will use leapfrog algorithm. If False, RK4 will be used. Used only if dt != None. 
     One of dt or tf must be specified, and dt takes priority over tf (if a timestep is specified, that timestep and
     non-adaptive time step methods will always be used).
-
+    *** NOTE: adaptive (dt = None) is not implemented yet; please use a specified dt. 
     """
     if dt is None:
-        print("You must specify a timestep dt.")
-        return None
-        # Implement RKF4(5) here.
+        print("You must specify a timestep and (optionally) an integration routine.")
+        # Check if the user gave a final timestep:
+        # if tf is None:
+        #     print("If no timestep is specified, you must specify an end time tf.")
+        #     return None
+        # # Implement RKF4(5) here.
         # cal_cst = [25./216., 1408./2565., 2197./4104., 1./5.]
         # err_cst = [16./135., 6656./12825., 28561./56430., 9./50., 2./55.]
 
@@ -142,7 +218,8 @@ def integrate(system, dt = None, routine = "leapfrog"):
         # print("I'll implement this if we have time, but RK4 should be good enough along with leapfrog. \nFor now, please specify a dt so the implemented integrators can be used.")
         
     else: 
-        if routine == "leapfrog":
+        # dt is not none: decide if we want energy conservation. 
+        if integrator == "leapfrog":
             # Initial kick: calculate velocity after half the timestep. 
             a = acceleration(system)
             system.vel += 0.5 * a * dt
@@ -154,7 +231,7 @@ def integrate(system, dt = None, routine = "leapfrog"):
             a = acceleration(system) # calculate the acceleration from the new system!
             system.vel += 0.5 * a * dt
             
-        elif routine == "rk4": 
+        elif integrator == "rk4": 
             # RK4 algorithm here. 
             coeff = np.asarray([0.5, 0.5, 1])
             cst = np.asarray([1., 2., 2., 1.]) / 6.
@@ -176,7 +253,7 @@ def integrate(system, dt = None, routine = "leapfrog"):
             for stage in range(1, order):
                 # Compute acceleration:
                 system.pos = x0 + dt * coeff[stage - 1] * xk[stage - 1]
-                a = acceleration(system)
+                a = acceleration(self)
         
                 # Then compute xk and vk:
                 xk[stage] = v0 + dt * coeff[stage - 1] * vk[stage - 1]
@@ -191,62 +268,4 @@ def integrate(system, dt = None, routine = "leapfrog"):
             system.vel = precise_add(v0, dt * dv)
             # Update in place so we don't need to return anything. 
         else:
-            print("You must specify an integration routine between leapfrog and rk4.")
-            return None
-
-def rk4(system, dt): 
-    """
-    Separate RK4 integrator for the system. Called in tests. 
-    """
-    # Seems like leapfrog has a large error compraed to this even after ~50000 years. Let's implement both. 
-
-    # RK4 algorithm here. 
-    coeff = np.asarray([0.5, 0.5, 1])
-    cst = np.asarray([1., 2., 2., 1.]) / 6.
-    order = 4
-
-    # Allocate memories:
-    x0 = system.pos.copy()
-    v0 = system.vel.copy()
-    xk = np.empty((order, system.nparticles, 3))
-    vk = np.empty((order, system.nparticles, 3))
-
-    # Initial stage
-    a = acceleration(system)
-    xk[0] = v0
-    vk[0] = a
-
-    # Loop to calculate following xk, vk
-    # Evaluation at each step is required, so we can't do vectorization here
-    for stage in range(1, order):
-        # Compute acceleration:
-        system.pos = x0 + dt * coeff[stage - 1] * xk[stage - 1]
-        a = acceleration(system)
-
-        # Then compute xk and vk:
-        xk[stage] = v0 + dt * coeff[stage - 1] * vk[stage - 1]
-        vk[stage] = a
-
-    # Finally, step forward:
-    dx = np.einsum("i,ijk->jk", cst, xk)
-    dv = np.einsum("i,ijk->jk", cst, vk)
-
-    # Update system:
-    #system.pos = precise_add(x0, dt * dx)
-    #system.vel = precise_add(v0, dt * dv)
-    system.pos = x0 + dt * dx
-    system.vel = v0 + dt * dv
-    # Update in place so we don't need to return anything. 
-
-def precise_add(x, dx):
-    """
-    Helper function to reduce roundoff error in the final step for integrators where we add together small numbers. 
-    """
-    # to reduce roundoff error, use the technique mentioned in 
-    # https://alvinng4.github.io/grav_sim/docs/documentations/reducing_round_off_error/
-    e = 0.0
-    x_0 = x
-    e = e + dx
-    x = x_0 + e
-    e = e + (x_0 - x)
-    return (x_0 + dx + e)
+            print("The implemented integrators are leapfrog and rk4. Please choose from one of them.")
