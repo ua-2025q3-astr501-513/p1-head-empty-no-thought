@@ -5,7 +5,7 @@ The Head Empty, No Thoughts™ team uses three different 3D N-body integrator to
 - Barnes-Hut algorithm for large clusters (~1000 particles).
 - an implicit RK15 from the Rebound Python package for higher accuracy for small clusters (~100 particles).
 
-Additionally, the presentation slides are available [here](https://docs.google.com/presentation/d/1UEkMNe21g3MoQCzrra4jgIt7j6J2d666Kll3J-W7jzA/edit?usp=sharing) (will be released after the presentation in-class is done). 
+Additionally, the presentation slides are available [here](https://docs.google.com/presentation/d/1UEkMNe21g3MoQCzrra4jgIt7j6J2d666Kll3J-W7jzA/edit?usp=sharing). 
 
 ## Documentation
 
